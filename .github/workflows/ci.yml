@@ -1,0 +1,30 @@
+name: pipeline-mlops
+
+on:
+  push:
+  workflow_dispatch:          # bouton "Run workflow" dans l'onglet Actions
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Installer les dependances
+        run: pip install -r requirements-ci.txt
+      - name: Recreer les donnees v2 (le stockage DVC est sur votre poste)
+        run: |
+          python donnees.py
+          python nouvelles_donnees.py
+      - name: Rejouer le pipeline
+        run: dvc repro
+      - name: Verifier la regle de qualite
+        run: python verifier_qualite.py
+      - name: Conserver les rapports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports
+          path: reports/
